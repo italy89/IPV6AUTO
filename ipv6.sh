@@ -18,21 +18,39 @@ install_3proxy() {
     cd 3proxy-0.9.3
     make -f Makefile.Linux
     mkdir -p /usr/local/etc/3proxy/{bin,logs,stat}
-    cp src/3proxy /usr/local/etc/3proxy/bin/
-    cp ./scripts/rc.d/proxy.sh /etc/init.d/3proxy
-    chmod +x /etc/init.d/3proxy
-    chkconfig 3proxy on
+    mv /3proxy/3proxy-0.9.3/bin/3proxy /usr/local/etc/3proxy/bin/
+    wget https://raw.githubusercontent.com/italy89/IPV6AUTO/main/3proxy.service-Centos8 --output-document=/3proxy/3proxy-0.9.3/scripts/3proxy.service2
+    cp /3proxy/3proxy-0.9.3/scripts/3proxy.service2 /usr/lib/systemd/system/3proxy.service
+    systemctl link /usr/lib/systemd/system/3proxy.service
+    systemctl daemon-reload
+#    systemctl enable 3proxy
+    echo "* hard nofile 999999" >>  /etc/security/limits.conf
+    echo "* soft nofile 999999" >>  /etc/security/limits.conf
+    echo "net.ipv6.conf.$main_interface.proxy_ndp=1" >> /etc/sysctl.conf
+    echo "net.ipv6.conf.all.proxy_ndp=1" >> /etc/sysctl.conf
+    echo "net.ipv6.conf.default.forwarding=1" >> /etc/sysctl.conf
+    echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
+    echo "net.ipv6.ip_nonlocal_bind = 1" >> /etc/sysctl.conf
+    sysctl -p
+    systemctl stop firewalld
+    systemctl disable firewalld
+
     cd $WORKDIR
 }
 
 gen_3proxy() {
     cat <<EOF
 daemon
-maxconn 1000
+maxconn 3000
+nserver 1.1.1.1
+nserver 8.8.4.4
+nserver 2001:4860:4860::8888
+nserver 2001:4860:4860::8844
 nscache 65536
 timeouts 1 5 30 60 180 1800 15 60
 setgid 65535
 setuid 65535
+stacksize 6291456
 flush
 users $(awk -F "/" 'BEGIN{ORS="";} {print $1 "::" $2 " "}' ${WORKDATA})
 $(awk -F "/" '{print "auth none\n" \
@@ -58,7 +76,7 @@ upload_proxy() {
 
 }
 gen_data() {
-    seq 10000 10149 | while read port; do
+    seq 10000 12000 | while read port; do
         echo "usr$(random)/pass$(random)/$IP4/$port/$(gen64 $IP6)"
     done
 }
