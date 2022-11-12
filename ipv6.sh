@@ -28,7 +28,7 @@ install_3proxy() {
 gen_3proxy() {
     cat <<EOF
 daemon
-maxconn 3003
+maxconn 10000
 nserver 1.1.1.1
 nserver 8.8.4.4
 nserver 2001:4860:4860::8888
@@ -63,7 +63,7 @@ upload_proxy() {
 
 }
 gen_data() {
-    seq 10000 13000 | while read port; do
+    seq 10000 12000 | while read port; do
         echo "usr$(random)/pass$(random)/$IP4/$port/$(gen64 $IP6)"
     done
 }
